@@ -1,0 +1,168 @@
+/**
+ * ui/sheets.js — Paneles deslizantes (modales) de la app.
+ */
+import { S, Engine } from "../state.js";
+import { esName } from "../data/teams.js";
+import { statusOf, localTime, dateLabel, matchTag, sortChrono } from "./format.js";
+import {
+  el, flagEl, isReal, refLabel, sect, predictionResult, segBar, probLabels, matchCard, pct
+} from "./components.js";
+
+const refName = ref => isReal(ref) ? esName(ref) : refLabel(ref);
+const closeIcon = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg>';
+
+export function openSheet(node){
+  const inner = document.getElementById("sheetInner");
+  inner.innerHTML = ""; inner.appendChild(node);
+  document.getElementById("sheet").classList.add("show");
+  document.getElementById("sheetBg").classList.add("show");
+}
+export function closeSheet(){
+  document.getElementById("sheet").classList.remove("show");
+  document.getElementById("sheetBg").classList.remove("show");
+}
+function closeBtn(){ return el("div", { class: "close", onclick: closeSheet, html: closeIcon }); }
+
+/* ---------- detalle de partido ---------- */
+export function openMatch(m){
+  const t1 = m.team1Ref, t2 = m.team2Ref;
+  const real = isReal(t1) && isReal(t2);
+  const st = statusOf(m);
+  const hasScore = m.score != null;
+  const wrap = el("div");
+
+  const head = el("div", { class: "sheet-head" });
+  const tt = el("div", { style: "display:flex;align-items:center;gap:10px;flex:1;justify-content:center" });
+  const c1 = el("div", { style: "text-align:center" }, [flagEl(t1, "flag"), el("div", { class: "nm", style: "font-size:13px;margin-top:5px" }, refName(t1))]);
+  const mid = el("div", { style: "text-align:center;min-width:64px" });
+  if(hasScore){
+    let sub = st.kind === "live" ? `EN JUEGO ${st.minute}'` + (st.real ? "" : " (est.)") : (m.pens ? `pen ${m.pens[0]}-${m.pens[1]}` : "FINAL");
+    mid.innerHTML = `<div style="font-family:var(--disp);font-weight:700;font-size:30px">${m.score[0]} – ${m.score[1]}</div><div style="font-size:10px;color:${st.kind === "live" ? "var(--live)" : "var(--faint)"}">${sub}</div>`;
+  } else {
+    mid.innerHTML = `<div style="font-family:var(--disp);font-weight:700;font-size:22px">${localTime(m)}</div><div style="font-size:10px;color:var(--faint)">${dateLabel(m.date)}</div>`;
+  }
+  const c2 = el("div", { style: "text-align:center" }, [flagEl(t2, "flag"), el("div", { class: "nm", style: "font-size:13px;margin-top:5px" }, refName(t2))]);
+  tt.appendChild(c1); tt.appendChild(mid); tt.appendChild(c2);
+  head.appendChild(tt); head.appendChild(closeBtn());
+  wrap.appendChild(head);
+
+  wrap.appendChild(el("div", { style: "font-size:12px;color:var(--muted);text-align:center;margin-bottom:14px" },
+    matchTag(m) + " · " + m.ground));
+
+  // probabilidad en vivo (si hay marcador real en juego)
+  if(real && st.kind === "live" && st.real && hasScore){
+    const base = Engine.predictMatch(t1, t2, S.model, { neutral: !!m.neutral });
+    const ip = Engine.inPlayProbability(m.score[0], m.score[1], st.minute, base.lambda1, base.lambda2);
+    wrap.appendChild(el("div", { class: "secttitle", style: "margin-top:4px" }, "Probabilidad en vivo"));
+    wrap.appendChild(segBar(ip));
+    wrap.appendChild(probLabels(t1, t2, ip, true));
+  }
+
+  // goleadores
+  if(hasScore && (m.goals1.length || m.goals2.length)){
+    wrap.appendChild(el("div", { class: "secttitle", style: "margin-top:18px" }, "Goles"));
+    const sc = el("div", { class: "scorers" });
+    m.goals1.forEach(g => sc.appendChild(scorerRow(g, t1)));
+    m.goals2.forEach(g => sc.appendChild(scorerRow(g, t2)));
+    wrap.appendChild(sc);
+  }
+
+  // predicción (partido por jugar)
+  if(real && !m.played && st.kind !== "live"){
+    wrap.appendChild(el("div", { class: "secttitle", style: "margin-top:18px" }, "Predicción"));
+    const p = Engine.predictMatch(t1, t2, S.model, { neutral: !!m.neutral, knockout: m.stage === "ko" });
+    const panel = el("div", { class: "panel", style: "margin-bottom:0" });
+    panel.appendChild(predictionResult(p));
+    wrap.appendChild(panel);
+  }
+  openSheet(wrap);
+}
+function scorerRow(g, team){
+  return el("div", { class: "scorerrow" }, [
+    el("div", { class: "min" }, (g.minute || "") + "'"),
+    flagEl(team, "flag"),
+    el("div", {}, g.name + (g.penalty ? " (pen)" : ""))
+  ]);
+}
+
+/* ---------- ficha de equipo ---------- */
+function standingRow(team){
+  if(!S.T.standings) return null;
+  for(const tbl of S.T.standings){ const r = tbl.find(x => x.team === team); if(r) return r; }
+  return null;
+}
+export function openTeam(team){
+  if(!isReal(team)) return;
+  const lb = S.model.leaderboard(S.T.teamsSet);
+  const rank = lb.findIndex(([t]) => t === team) + 1;
+  const row = standingRow(team);
+  const wrap = el("div");
+
+  const head = el("div", { class: "sheet-head" });
+  head.appendChild(flagEl(team, "flag"));
+  head.appendChild(el("div", { style: "flex:1" }, [
+    el("div", { class: "nm" }, esName(team)),
+    el("div", { class: "meta" }, S.T.name + (row ? " · " + row.pj + " jugados" : ""))
+  ]));
+  head.appendChild(closeBtn());
+  wrap.appendChild(head);
+
+  const ig = el("div", { class: "infogrid" });
+  ig.appendChild(infoPill(String(Math.round(S.model.get(team))), "Elo actual"));
+  ig.appendChild(infoPill("#" + rank, "Ranking Elo (" + S.T.teams.length + ")"));
+  if(row) ig.appendChild(infoPill(row.pts + " pts", "Posición #" + row.rank));
+  else if(S.simProbs && S.simProbs[team]) ig.appendChild(infoPill(pct(S.simProbs[team].title, 1), "Ser campeón"));
+  wrap.appendChild(ig);
+
+  wrap.appendChild(el("div", { class: "secttitle", style: "margin-top:4px" }, "Sus partidos"));
+  const mine = sortChrono(S.T.matches.filter(m => m.team1Ref === team || m.team2Ref === team));
+  if(!mine.length) wrap.appendChild(el("div", { class: "explain" }, "Sin partidos registrados."));
+  mine.forEach(m => wrap.appendChild(matchCard(m)));
+  openSheet(wrap);
+}
+function infoPill(v, k){
+  return el("div", { class: "ip" }, [el("div", { class: "v" }, v), el("div", { class: "k" }, k)]);
+}
+
+/* ---------- ranking Elo ---------- */
+export function openElo(){
+  const wrap = el("div");
+  const head = el("div", { class: "sheet-head" });
+  head.appendChild(el("div", { style: "flex:1" }, [
+    el("div", { class: "nm" }, "Ranking Elo"),
+    el("div", { class: "meta" }, S.T.name + " · refinado con resultados" )
+  ]));
+  head.appendChild(closeBtn());
+  wrap.appendChild(head);
+
+  S.model.leaderboard(S.T.teamsSet).forEach(([t, r], i) => {
+    const row = el("div", { class: "oddrow", onclick: () => { closeSheet(); setTimeout(() => openTeam(t), 250); } });
+    row.appendChild(el("div", { class: "rk" }, String(i + 1)));
+    row.appendChild(flagEl(t));
+    row.appendChild(el("div", { class: "nm" }, esName(t)));
+    row.appendChild(el("div", { class: "pc", style: "color:var(--sky);width:54px;font-size:16px" }, String(Math.round(r))));
+    wrap.appendChild(row);
+  });
+  openSheet(wrap);
+}
+
+/* ---------- acerca de ---------- */
+export function openAbout(){
+  const wrap = el("div");
+  const head = el("div", { class: "sheet-head" });
+  head.appendChild(el("div", { style: "flex:1" }, [
+    el("div", { class: "nm" }, "Acerca de"),
+    el("div", { class: "meta" }, "Fútbol · En vivo y predicciones")
+  ]));
+  head.appendChild(closeBtn());
+  wrap.appendChild(head);
+
+  const body = el("div", { class: "explain" });
+  body.innerHTML =
+    "<p>App de <b>fútbol</b> para las grandes ligas: resultados, calendario, clasificación, predicciones de cualquier cruce y pronóstico de temporada.</p>" +
+    "<p style='margin-top:12px'><b>Datos:</b> <i>API-Football</i> a través de un <b>proxy seguro</b> (la clave vive en el servidor, nunca en el navegador). Con un partido en juego, las probabilidades se recalculan en vivo según marcador y minuto.</p>" +
+    "<p style='margin-top:12px'><b>Modelo:</b> Elo (sembrado con la tabla y autoajustado con resultados) → goles esperados → Poisson/Dixon-Coles → Monte Carlo. Mira «¿Cómo funciona?» en Predicción.</p>" +
+    "<p style='margin-top:12px;color:var(--faint)'>Proyecto de aficionado. Las probabilidades son estimaciones, no certezas.</p>";
+  wrap.appendChild(body);
+  openSheet(wrap);
+}

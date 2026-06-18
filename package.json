@@ -1,0 +1,30 @@
+{
+  "name": "futbol-grandes-ligas",
+  "version": "2.0.0",
+  "description": "App de fútbol (grandes ligas): resultados, calendario, clasificación, predicciones y pronóstico de temporada. Web + PWA + app nativa (Capacitor). Datos vía proxy seguro a API-Football.",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "node scripts/dev-proxy.mjs",
+    "start": "node scripts/dev-proxy.mjs",
+    "snapshot": "node scripts/snapshot.mjs",
+    "cap:sync": "cap sync",
+    "cap:android": "cap open android"
+  },
+  "keywords": [
+    "futbol",
+    "soccer",
+    "ligas",
+    "predicciones",
+    "elo",
+    "poisson",
+    "pwa",
+    "capacitor"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "@capacitor/android": "^8.4.0",
+    "@capacitor/cli": "^8.4.0",
+    "@capacitor/core": "^8.4.0"
+  }
+}

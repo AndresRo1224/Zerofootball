@@ -1,0 +1,29 @@
+# --- Secretos: NUNCA subir la clave de la API ---
+.env
+.env.*
+!.env.example
+
+# Dependencias / build web
+node_modules/
+.vercel/
+dist/
+*.log
+
+# Capacitor / móvil: se conservan los proyectos android/ e ios/,
+# pero NO sus artefactos de compilación (regenerables y pesados).
+.gradle/
+**/build/
+android/app/release/
+android/local.properties
+android/.idea/
+android/captures/
+ios/App/Pods/
+ios/App/build/
+DerivedData/
+*.apk
+*.aab
+*.ipa
+
+# Sistema
+.DS_Store
+Thumbs.db

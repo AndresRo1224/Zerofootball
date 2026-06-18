@@ -1,0 +1,10 @@
+{
+  "appId": "com.andres.futbol",
+  "appName": "Futbol",
+  "webDir": "www",
+  "backgroundColor": "#0A141C",
+  "server": {
+    "url": "https://TU-APP.vercel.app",
+    "androidScheme": "https"
+  }
+}

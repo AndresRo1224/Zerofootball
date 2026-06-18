@@ -1,0 +1,17 @@
+{
+  "name": "Fútbol — En vivo y predicciones",
+  "short_name": "Fútbol",
+  "description": "Resultados, calendario, clasificación, predicciones y pronóstico de temporada de las grandes ligas.",
+  "lang": "es",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0A141C",
+  "theme_color": "#0A141C",
+  "categories": ["sports"],
+  "icons": [
+    { "src": "./public/icons/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "./public/icons/icon-maskable.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
+  ]
+}
