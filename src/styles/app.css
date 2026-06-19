@@ -32,9 +32,10 @@ a{color:var(--sky)}
 
 /* ---------- App bar ---------- */
 .appbar{
-  position:sticky;top:0;z-index:40;backdrop-filter:blur(14px);
-  background:linear-gradient(180deg, rgba(10,20,28,.92), rgba(10,20,28,.72));
+  position:sticky;top:0;z-index:40;backdrop-filter:blur(16px);
+  background:rgba(9,18,25,.97);
   border-bottom:1px solid var(--line);
+  box-shadow:0 10px 26px -16px rgba(0,0,0,.8);
 }
 .appbar-row{display:flex;align-items:center;gap:10px;padding:12px 16px 10px}
 .brand{display:flex;align-items:center;gap:9px;flex:1;min-width:0;cursor:pointer}
@@ -331,12 +332,19 @@ details.how .body{padding:13px 0}
   .oddrow:hover{ background:rgba(255,255,255,.02); }
 }
 
-/* ---------- Selector de liga ---------- */
-.leaguebar{display:flex;align-items:center;gap:8px;padding:0 16px 10px;color:var(--muted)}
-.leaguebar > svg{flex:none;color:var(--faint)}
-#leagueSel{flex:1;min-width:0;appearance:none;background:var(--card);border:1px solid var(--line2);color:var(--ink);
-  padding:9px 30px 9px 12px;border-radius:11px;font-size:13px;font-weight:600;font-family:var(--ui);
-  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%235C7488' stroke-width='3'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center}
+/* ---------- Selector de torneo / liga ---------- */
+.leaguebar{display:flex;align-items:center;gap:10px;padding:2px 16px 6px}
+.leaguebar .ll{display:flex;align-items:center;gap:6px;flex:none;font-size:10px;font-weight:700;
+  letter-spacing:.7px;text-transform:uppercase;color:var(--faint)}
+.leaguebar .ll svg{color:var(--grass)}
+#leagueSel{flex:1;min-width:0;appearance:none;color:var(--ink);font-size:13.5px;font-weight:700;font-family:var(--ui);
+  padding:10px 32px 10px 13px;border-radius:12px;border:1px solid var(--line2);
+  background-color:var(--card2);
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%232FD27A' stroke-width='3'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 12px center;transition:border-color .15s, box-shadow .15s}
+#leagueSel:focus{outline:none;border-color:var(--grass);box-shadow:0 0 0 3px rgba(47,210,122,.15)}
+.leaguehint{font-size:10.5px;color:var(--faint);padding:0 16px 9px;line-height:1.45}
+.leaguehint b{color:var(--sky);font-weight:700}
 
 /* ---------- Selector de jornada (dentro del strip) ---------- */
 .roundsel{flex:none;appearance:none;background:var(--card);border:1px solid var(--line);color:var(--muted);
@@ -360,11 +368,13 @@ table.gt.odds td.pts{color:var(--gold)}
 
 /* ---------- Inicio: noticias ---------- */
 .newscard{display:block;background:var(--card);border:1px solid var(--line);border-radius:14px;
-  padding:12px 14px;margin-bottom:9px;text-decoration:none;color:inherit;transition:border-color .15s}
+  padding:12px 14px;margin-bottom:9px;cursor:pointer;color:inherit;transition:border-color .15s,transform .08s}
 .newscard:active{transform:scale(.995);border-color:var(--line2)}
 .newscard .src{font-size:10px;color:var(--sky);font-weight:700;text-transform:uppercase;letter-spacing:.3px;margin-bottom:4px}
 .newscard .ttl{font-size:14px;font-weight:600;line-height:1.3;color:var(--ink)}
-.newscard .sum{font-size:11.5px;color:var(--faint);line-height:1.5;margin-top:5px}
+.newscard .sum{font-size:11.5px;color:var(--faint);line-height:1.5;margin-top:5px;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.newscard .more{font-size:10.5px;color:var(--grass);font-weight:700;margin-top:8px}
 
 @media (min-width:900px){
   .leaguebar{padding-left:28px;padding-right:28px}
@@ -372,4 +382,41 @@ table.gt.odds td.pts{color:var(--gold)}
   .nav button .lb{font-size:14px}
 }
 
-@media (prefers-reduced-motion: reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+/* ---------- Animaciones / estados de carga ---------- */
+@keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@keyframes shimmer{0%{background-position:-180% 0}100%{background-position:180% 0}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes loadslide{0%{left:-45%}100%{left:100%}}
+
+/* entrada con leve escalonado de los bloques principales */
+#view > .hero,#view > .mcard,#view > .gcard,#view > .panel,#view > .secttitle,
+#view > .champbox,#view > details.how,#view .newscard,#view .shortcuts{
+  animation:rise .34s cubic-bezier(.2,.75,.2,1) both;
+}
+#view > *:nth-child(2){animation-delay:.03s}
+#view > *:nth-child(3){animation-delay:.06s}
+#view > *:nth-child(4){animation-delay:.09s}
+#view > *:nth-child(5){animation-delay:.12s}
+
+/* barra de carga superior (durante recarga / cambio de liga) */
+.loadbar{position:fixed;top:0;left:50%;transform:translateX(-50%);width:100%;max-width:var(--maxw);height:3px;
+  z-index:70;overflow:hidden;pointer-events:none;opacity:0;transition:opacity .2s}
+.loadbar.on{opacity:1}
+.loadbar::before{content:"";position:absolute;top:0;bottom:0;width:45%;border-radius:3px;
+  background:linear-gradient(90deg,transparent,var(--grass),var(--sky),transparent);animation:loadslide 1s ease-in-out infinite}
+
+/* skeletons de carga */
+.skel{position:relative;overflow:hidden;background:var(--card);border:1px solid var(--line);border-radius:14px}
+.skel::after{content:"";position:absolute;inset:0;background-size:200% 100%;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.06),transparent);animation:shimmer 1.3s infinite}
+.skel-news{height:74px;margin-bottom:9px}
+
+/* spinner */
+.spinner{width:16px;height:16px;border:2px solid var(--line2);border-top-color:var(--grass);
+  border-radius:50%;display:inline-block;animation:spin .8s linear infinite;vertical-align:-3px;margin-right:6px}
+
+/* realce del activo en la navegación */
+.nav button{transition:color .18s,background .18s}
+.nav button.on .lb{animation:rise .25s ease}
+
+@media (prefers-reduced-motion: reduce){*{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}

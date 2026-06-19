@@ -24,6 +24,14 @@ export const CONFIG = {
   // Liga mostrada al abrir.
   DEFAULT_LEAGUE: 39,
 
+  // --- Marcador EN VIVO del Mundial (opcional) ---
+  // El Mundial usa openfootball (resultados, ~a diario). Para marcador y MINUTO
+  // en tiempo real durante los partidos, se superpone API-Football (liga 1).
+  // El plan GRATIS no da acceso a la temporada 2026: pon WORLDCUP_LIVE en true
+  // SOLO cuando tengas un plan que cubra WORLDCUP_API_SEASON, y se activará solo.
+  WORLDCUP_LIVE: false,
+  WORLDCUP_API_SEASON: 2026,
+
   /**
    * Competiciones disponibles. Añadir una liga = una línea más.
    *  id        -> id de API-Football

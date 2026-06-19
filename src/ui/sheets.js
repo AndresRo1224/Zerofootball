@@ -153,20 +153,40 @@ export function openElo(){
   openSheet(wrap);
 }
 
+/* ---------- vista previa de noticia ---------- */
+export function openNews(item){
+  const wrap = el("div");
+  const head = el("div", { class: "sheet-head" });
+  head.appendChild(el("div", { style: "flex:1" }, [
+    el("div", { class: "nm" }, item.source || "Noticia"),
+    el("div", { class: "meta" }, item.date ? new Date(item.date).toLocaleString() : "")
+  ]));
+  head.appendChild(closeBtn());
+  wrap.appendChild(head);
+
+  wrap.appendChild(el("div", { style: "font-family:var(--disp);font-weight:700;font-size:21px;line-height:1.25;margin-bottom:12px" }, item.title));
+  if(item.summary) wrap.appendChild(el("div", { class: "explain", style: "margin-bottom:18px" }, item.summary));
+  wrap.appendChild(el("a", {
+    class: "btn", href: item.link, target: "_blank", rel: "noopener noreferrer",
+    style: "display:block;text-align:center;text-decoration:none"
+  }, "Leer la noticia completa →"));
+  openSheet(wrap);
+}
+
 /* ---------- acerca de ---------- */
 export function openAbout(){
   const wrap = el("div");
   const head = el("div", { class: "sheet-head" });
   head.appendChild(el("div", { style: "flex:1" }, [
     el("div", { class: "nm" }, "Acerca de"),
-    el("div", { class: "meta" }, "Fútbol · En vivo y predicciones")
+    el("div", { class: "meta" }, "ZeroFootball · En vivo y predicciones")
   ]));
   head.appendChild(closeBtn());
   wrap.appendChild(head);
 
   const body = el("div", { class: "explain" });
   body.innerHTML =
-    "<p>App de <b>fútbol</b> para las grandes ligas: resultados, calendario, clasificación, predicciones de cualquier cruce y pronóstico de temporada.</p>" +
+    "<p><b>ZeroFootball</b>: el Mundial 2026 (grupos, bracket, simulación de campeón) y las grandes ligas (resultados, clasificación, predicciones y pronóstico de temporada) en una sola app.</p>" +
     "<p style='margin-top:12px'><b>Datos:</b> <i>API-Football</i> a través de un <b>proxy seguro</b> (la clave vive en el servidor, nunca en el navegador). Con un partido en juego, las probabilidades se recalculan en vivo según marcador y minuto.</p>" +
     "<p style='margin-top:12px'><b>Modelo:</b> Elo (sembrado con la tabla y autoajustado con resultados) → goles esperados → Poisson/Dixon-Coles → Monte Carlo. Mira «¿Cómo funciona?» en Predicción.</p>" +
     "<p style='margin-top:12px;color:var(--faint)'>Proyecto de aficionado. Las probabilidades son estimaciones, no certezas.</p>";

@@ -4,6 +4,7 @@
  */
 import { S, currentLeagueMeta } from "../../state.js";
 import { el, sect, emptyState } from "../components.js";
+import { openNews } from "../sheets.js";
 import { fetchNews } from "../../data/providers/news.js";
 
 const ICON = {
@@ -20,8 +21,8 @@ export function renderInicio(){
 
   // bienvenida
   const hero = el("div", { class: "hero", style: "cursor:default" });
-  hero.appendChild(el("div", { class: "eyebrow" }, "Bienvenido"));
-  hero.appendChild(el("div", { style: "font-family:var(--disp);font-weight:700;font-size:26px;margin:6px 0 2px" }, "Fútbol · en vivo y predicciones"));
+  hero.appendChild(el("div", { class: "eyebrow" }, "Bienvenido a"));
+  hero.appendChild(el("div", { style: "font-family:var(--disp);font-weight:700;font-size:28px;margin:6px 0 2px" }, "ZeroFootball"));
   hero.appendChild(el("div", { class: "meta", style: "text-align:left;margin:0" },
     "Estás viendo: " + currentLeagueMeta().name + " · cámbialo con el selector de arriba"));
   v.appendChild(hero);
@@ -51,7 +52,7 @@ export function renderInicio(){
       S._newsLoading = true;
       fetchNews().then(n => { S.news = n; S._newsLoading = false; if(S.currentTab === "inicio") S.refresh(); });
     }
-    v.appendChild(el("div", { class: "explain", style: "padding:8px 4px" }, "Cargando noticias…"));
+    for(let i = 0; i < 4; i++) v.appendChild(el("div", { class: "skel skel-news" }));
   } else if(!S.news.length){
     v.appendChild(emptyState("📰", "Sin noticias", "No se pudieron cargar las noticias ahora."));
   } else {
@@ -62,11 +63,12 @@ export function renderInicio(){
 }
 
 function newsCard(n){
-  const a = el("a", { class: "newscard", href: n.link, target: "_blank", rel: "noopener noreferrer" });
-  a.appendChild(el("div", { class: "src" }, n.source + (n.date ? " · " + relTime(n.date) : "")));
-  a.appendChild(el("div", { class: "ttl" }, n.title));
-  if(n.summary) a.appendChild(el("div", { class: "sum" }, n.summary));
-  return a;
+  const card = el("div", { class: "newscard", role: "button", tabindex: "0", onclick: () => openNews(n) });
+  card.appendChild(el("div", { class: "src" }, n.source + (n.date ? " · " + relTime(n.date) : "")));
+  card.appendChild(el("div", { class: "ttl" }, n.title));
+  if(n.summary) card.appendChild(el("div", { class: "sum" }, n.summary));
+  card.appendChild(el("div", { class: "more" }, "Vista previa →"));
+  return card;
 }
 
 function relTime(dstr){

@@ -47,13 +47,17 @@ function applyLoad(res){
 
 /* ---------- carga ---------- */
 let loadToken = 0;
+function loadbar(on){ const b = document.getElementById("loadbar"); if(b) b.classList.toggle("on", on); }
+
 async function reload(manual){
   const myToken = ++loadToken;
   if(manual) flashToast("Actualizando…");
+  loadbar(true);
   setUpdated("Cargando " + currentLeagueMeta().name + "…", false);
 
   const res = await loadCompetition(currentLeagueMeta());
   if(myToken !== loadToken) return;
+  loadbar(false);
 
   applyLoad(res);
   const played = S.T.matches.filter(m => m.played).length;

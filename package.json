@@ -1,7 +1,7 @@
 {
-  "name": "futbol-grandes-ligas",
+  "name": "zerofootball",
   "version": "2.0.0",
-  "description": "App de fútbol (grandes ligas): resultados, calendario, clasificación, predicciones y pronóstico de temporada. Web + PWA + app nativa (Capacitor). Datos vía proxy seguro a API-Football.",
+  "description": "ZeroFootball: Mundial 2026 + grandes ligas. Resultados, clasificación, predicciones, pronóstico de temporada y noticias. Web + PWA + app nativa (Capacitor). Datos vía proxy seguro.",
   "type": "module",
   "private": true,
   "scripts": {

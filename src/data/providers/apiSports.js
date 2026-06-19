@@ -119,6 +119,31 @@ export function normalizeStandings(json) {
   return groups;
 }
 
-/* ---------- API pública ---------- */
+/**
+ * Capa EN VIVO del Mundial: marcador + minuto reales de API-Football (liga 1)
+ * para superponer sobre la estructura de openfootball. Devuelve entradas
+ * { home, away, date, live, minute, score:[h,a], pens } normalizables por nombre.
+ * Lanza si el plan no cubre la temporada (se ignora arriba).
+ */
+export async function fetchWorldCupOverlay(season) {
+  const json = await apiGet("fixtures", { league: 1, season });
+  const out = [];
+  for (const f of (json.response || [])) {
+    const short = f.fixture?.status?.short || "NS";
+    const home = f.teams?.home?.name, away = f.teams?.away?.name;
+    if (!home || !away) continue;
+    const date = (f.fixture?.date || "").slice(0, 10);
+    const gh = f.goals?.home ?? 0, ga = f.goals?.away ?? 0;
+    if (LIVE.has(short)) {
+      out.push({ home, away, date, live: true, minute: f.fixture?.status?.elapsed ?? 0, score: [gh, ga] });
+    } else if (DONE.has(short)) {
+      const pen = (short === "PEN" && f.score?.penalty) ? [f.score.penalty.home ?? 0, f.score.penalty.away ?? 0] : null;
+      out.push({ home, away, date, live: false, score: [f.score?.fulltime?.home ?? gh, f.score?.fulltime?.away ?? ga], pens: pen });
+    }
+  }
+  return out;
+}
+
+/* ---------- API pública (ligas) ---------- */
 export function fetchFixtures(leagueId, season) { return apiGet("fixtures", { league: leagueId, season }); }
 export function fetchStandings(leagueId, season) { return apiGet("standings", { league: leagueId, season }); }

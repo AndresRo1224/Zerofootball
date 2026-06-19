@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#0A141C">
-<meta name="description" content="Fútbol: resultados, calendario, clasificación, predicciones y pronóstico de temporada de las grandes ligas. Web y móvil.">
-<title>Fútbol · En vivo y predicciones</title>
+<meta name="description" content="ZeroFootball: resultados, calendario, clasificación, predicciones y pronóstico de temporada del Mundial y las grandes ligas. Web y móvil.">
+<title>ZeroFootball · En vivo y predicciones</title>
 
 <!-- Defensa en profundidad: misma política que vercel.json (también aplica en dev). -->
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https://media.api-sports.io https://flagcdn.com; connect-src 'self' https://media.api-sports.io https://raw.githubusercontent.com; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none'">
@@ -20,6 +20,7 @@
 <link rel="stylesheet" href="./src/styles/app.css">
 </head>
 <body>
+<div class="loadbar" id="loadbar"></div>
 
 <header class="appbar">
   <div class="appbar-row">
@@ -28,8 +29,8 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="#06140d" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7l4 3-1.5 5h-5L8 10z"/></svg>
       </div>
       <div>
-        <h1>FÚTBOL</h1>
-        <div class="sub" id="brandSub">Grandes ligas</div>
+        <h1>ZeroFootball</h1>
+        <div class="sub" id="brandSub">Mundial y grandes ligas</div>
       </div>
     </div>
     <button class="iconbtn" id="btnElo" title="Ranking Elo" aria-label="Ranking Elo">
@@ -43,9 +44,13 @@
     </button>
   </div>
   <div class="leaguebar">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><circle cx="12" cy="12" r="9"/><path d="M12 3a15 15 0 0 1 0 18M12 3a15 15 0 0 0 0 18M3 12h18"/></svg>
+    <div class="ll">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><circle cx="12" cy="12" r="9"/><path d="M12 3a15 15 0 0 1 0 18M12 3a15 15 0 0 0 0 18M3 12h18"/></svg>
+      <span>Torneo / Liga</span>
+    </div>
     <select id="leagueSel" aria-label="Elegir competición"></select>
   </div>
+  <div class="leaguehint">Elige aquí el <b>Mundial 2026</b> o la liga que quieras ver</div>
   <div class="updated" id="updatedLabel"><span class="dotpulse"></span><span>Cargando…</span></div>
   <div id="substrip"></div>
 </header>

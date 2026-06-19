@@ -1,7 +1,7 @@
 {
-  "name": "Fútbol — En vivo y predicciones",
-  "short_name": "Fútbol",
-  "description": "Resultados, calendario, clasificación, predicciones y pronóstico de temporada de las grandes ligas.",
+  "name": "ZeroFootball — En vivo y predicciones",
+  "short_name": "ZeroFootball",
+  "description": "Mundial 2026 y grandes ligas: resultados, clasificación, predicciones, pronóstico de temporada y noticias.",
   "lang": "es",
   "start_url": ".",
   "scope": ".",
