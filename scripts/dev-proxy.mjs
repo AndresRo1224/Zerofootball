@@ -42,6 +42,28 @@ const clean = v => {
   return /^[A-Za-z0-9 _,:+\-]+$/.test(s) ? s : null;
 };
 
+// --- noticias (RSS -> JSON), igual que api/news.js ---
+const NEWS_SOURCES = {
+  md:   { url: "https://www.mundodeportivo.com/feed/rss/futbol/", name: "Mundo Deportivo" },
+  espn: { url: "https://www.espn.com/espn/rss/soccer/news",       name: "ESPN" }
+};
+const decodeRss = s => String(s)
+  .replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, "$1").replace(/<[^>]+>/g, "")
+  .replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"')
+  .replace(/&#39;|&apos;/g, "'").replace(/&nbsp;/g, " ").replace(/&amp;/g, "&")
+  .replace(/\s+/g, " ").trim();
+function parseRss(xml, sourceName) {
+  const items = []; const re = /<item[\s\S]*?<\/item>/g; let m;
+  while ((m = re.exec(xml)) && items.length < 24) {
+    const block = m[0];
+    const pick = tag => { const r = new RegExp("<" + tag + "[^>]*>([\\s\\S]*?)<\\/" + tag + ">").exec(block); return r ? decodeRss(r[1]) : ""; };
+    const title = pick("title"); const link = pick("link") || pick("guid");
+    if (!title || !link) continue;
+    items.push({ title, link, summary: pick("description").slice(0, 180), date: pick("pubDate"), source: sourceName });
+  }
+  return items;
+}
+
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, `http://localhost:${PORT}`);
 
@@ -61,6 +83,20 @@ const server = http.createServer(async (req, res) => {
     } catch (e) {
       res.writeHead(502, { "content-type": "application/json" });
       return res.end(JSON.stringify({ error: "Error del proxy: " + e.message }));
+    }
+  }
+
+  // --- noticias ---
+  if (url.pathname === "/api/news") {
+    const src = NEWS_SOURCES[url.searchParams.get("source")] || NEWS_SOURCES.md;
+    try {
+      const r = await fetch(src.url, { headers: { "User-Agent": "Mozilla/5.0", "Accept": "application/rss+xml, application/xml, text/xml" } });
+      const xml = await r.text();
+      res.writeHead(200, { "content-type": "application/json; charset=utf-8" });
+      return res.end(JSON.stringify({ source: src.name, items: parseRss(xml, src.name) }));
+    } catch (e) {
+      res.writeHead(502, { "content-type": "application/json" });
+      return res.end(JSON.stringify({ error: "news", items: [] }));
     }
   }
 

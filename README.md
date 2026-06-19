@@ -101,6 +101,7 @@ de inicio”.
 
 ```
 ├── api/football.js            # PROXY serverless (la clave vive aquí, server-side)
+├── api/news.js                # PROXY de noticias (RSS -> JSON) para la pantalla Inicio
 ├── vercel.json                # cabeceras de seguridad + caché del proxy
 ├── capacitor.config.json      # config de la app nativa
 ├── .env.example               # plantilla (la real es .env, ignorada por git)
@@ -128,7 +129,7 @@ de inicio”.
     │       ├── openfootball.js#   fuente del Mundial 2026
     │       └── provider.js    #   carga por tipo de competición (con fallback)
     └── ui/  (format · components · sheets · sim ·
-             views/: hoy · partidos · tabla · grupos · prediccion · pronostico · bracket)
+             views/: inicio · hoy · partidos · tabla · grupos · prediccion · pronostico · bracket)
 ```
 
 ---

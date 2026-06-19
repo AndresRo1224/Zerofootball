@@ -12,8 +12,9 @@ export const S = {
   simProbs: null,          // probabilidades (MC) — forma según el modo
   likely: null,            // camino más probable (bracket del Mundial)
 
-  currentTab: "hoy",
+  currentTab: "inicio",
   currentLeague: CONFIG.DEFAULT_LEAGUE,
+  news: null,              // titulares (cargados bajo demanda en Inicio)
   leagues: CONFIG.LEAGUES,
   leagueType: "league",    // tipo de la competición activa
 

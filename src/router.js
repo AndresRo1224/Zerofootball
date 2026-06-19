@@ -2,6 +2,7 @@
  * router.js — Navegación entre pestañas + rutas con hash (#/tabla, etc.).
  */
 import { S, currentLeagueMeta } from "./state.js";
+import { renderInicio } from "./ui/views/inicio.js";
 import { renderHoy } from "./ui/views/hoy.js";
 import { renderPartidos } from "./ui/views/partidos.js";
 import { renderTabla } from "./ui/views/tabla.js";
@@ -13,6 +14,7 @@ import { renderBracket } from "./ui/views/bracket.js";
 const isWC = () => currentLeagueMeta().type === "worldcup";
 
 const VIEWS = {
+  inicio: renderInicio,
   hoy: renderHoy,
   partidos: renderPartidos,
   tabla: () => isWC() ? renderGrupos() : renderTabla(),       // Mundial: Grupos
@@ -32,7 +34,7 @@ function setSubstrip(node){
 }
 
 export function go(tab, { fromHash = false } = {}){
-  if(!VIEWS[tab]) tab = "hoy";
+  if(!VIEWS[tab]) tab = "inicio";
   S.currentTab = tab;
   document.querySelectorAll("#nav button").forEach(b => b.classList.toggle("on", b.dataset.tab === tab));
   const { content, substrip } = VIEWS[tab]();
@@ -58,5 +60,5 @@ export function initRouter(){
   });
 
   const initial = (location.hash || "").replace(/^#\//, "");
-  go(TABS.includes(initial) ? initial : "hoy", { fromHash: true });
+  go(TABS.includes(initial) ? initial : "inicio", { fromHash: true });
 }
