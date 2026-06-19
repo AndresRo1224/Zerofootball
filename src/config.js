@@ -33,6 +33,9 @@ export const CONFIG = {
    *  season    -> (opcional) sobreescribe SEASON para esa competición
    */
   LEAGUES: [
+    // Mundial 2026 (app original): datos de openfootball, NO usa la API ni la
+    // temporada. Grupos + bracket + simulación de campeón.
+    { id: 1,   name: "Mundial 2026",    country: "FIFA",        type: "worldcup" },
     { id: 39,  name: "Premier League",  country: "Inglaterra",  type: "league", cl: 4, releg: 3 },
     { id: 140, name: "LaLiga",          country: "España",      type: "league", cl: 4, releg: 3 },
     { id: 135, name: "Serie A",         country: "Italia",      type: "league", cl: 4, releg: 3 },

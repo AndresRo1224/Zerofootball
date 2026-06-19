@@ -2,7 +2,7 @@
  * ui/views/hoy.js — Pestaña "Hoy": partido destacado (en vivo > hoy > próximo >
  * último destacado), partidos de hoy, resultados recientes y próximos.
  */
-import { S, Engine } from "../../state.js";
+import { S, Engine, predictOptions } from "../../state.js";
 import { esName } from "../../data/teams.js";
 import { statusOf, localTime, dateLabel, matchTag, isoToday, sortChrono } from "../format.js";
 import { el, flagEl, isReal, refLabel, sect, matchCard, segBar, probLabels, pitchSVG, emptyState } from "../components.js";
@@ -104,7 +104,7 @@ function featuredHero(m, now){
   h.appendChild(el("div", { class: "meta" }, dateLabel(m.date) + " · " + matchTag(m) + (m.ground ? " · " + m.ground : "")));
 
   if(real){
-    const base = Engine.predictMatch(m.team1Ref, m.team2Ref, S.model, { neutral: !!m.neutral });
+    const base = Engine.predictMatch(m.team1Ref, m.team2Ref, S.model, predictOptions(m));
     if(st.kind === "live" && st.real && hasScore){
       const ip = Engine.inPlayProbability(m.score[0], m.score[1], st.minute, base.lambda1, base.lambda2);
       h.appendChild(segBar(ip));

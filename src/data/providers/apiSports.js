@@ -38,8 +38,9 @@ const DONE = new Set(["FT", "AET", "PEN"]);
 const pad = n => String(n).padStart(2, "0");
 function roundInfo(round, leagueType) {
   const r = round || "";
-  let m = /^Group ([A-Z])/i.exec(r);
+  let m = /^Group ([A-Z]) - /i.exec(r);          // UCL/Libertadores: "Group A - 1"
   if (m) return { stage: "group", group: m[1].toUpperCase() };
+  if (/^Group Stage/i.test(r)) return { stage: "group", group: null };   // Mundial: "Group Stage - 1"
   if (/Final|Semi|Quarter|Round of|8th Finals|16th Finals|Play-?offs|Knockout/i.test(r))
     return { stage: "ko", group: null };
   return { stage: leagueType === "cup" ? "ko" : "league", group: null };

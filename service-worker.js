@@ -1,6 +1,6 @@
 /* service-worker.js — PWA: precarga el shell y sirve offline.
    Los datos de /api/ NO se cachean de forma agresiva (network-first). */
-const CACHE = "futbol-v2";
+const CACHE = "futbol-v3";
 
 const SHELL = [
   "./", "./index.html", "./manifest.webmanifest",
@@ -8,11 +8,11 @@ const SHELL = [
   "./src/config.js", "./src/state.js", "./src/router.js", "./src/main.js",
   "./src/engine/elo.js", "./src/engine/poisson.js", "./src/engine/prediction.js",
   "./src/engine/tournament.js", "./src/engine/league.js", "./src/engine/index.js",
-  "./src/data/teams.js", "./src/data/snapshot.js",
-  "./src/data/providers/provider.js", "./src/data/providers/apiSports.js",
+  "./src/data/teams.js", "./src/data/snapshot.js", "./src/data/wcSnapshot.js",
+  "./src/data/providers/provider.js", "./src/data/providers/apiSports.js", "./src/data/providers/openfootball.js",
   "./src/ui/format.js", "./src/ui/components.js", "./src/ui/sheets.js", "./src/ui/sim.js",
-  "./src/ui/views/hoy.js", "./src/ui/views/partidos.js", "./src/ui/views/tabla.js",
-  "./src/ui/views/prediccion.js", "./src/ui/views/pronostico.js",
+  "./src/ui/views/hoy.js", "./src/ui/views/partidos.js", "./src/ui/views/tabla.js", "./src/ui/views/grupos.js",
+  "./src/ui/views/prediccion.js", "./src/ui/views/pronostico.js", "./src/ui/views/bracket.js",
   "./public/icons/icon.svg", "./public/icons/icon-maskable.svg"
 ];
 

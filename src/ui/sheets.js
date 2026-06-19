@@ -1,8 +1,8 @@
 /**
  * ui/sheets.js — Paneles deslizantes (modales) de la app.
  */
-import { S, Engine } from "../state.js";
-import { esName } from "../data/teams.js";
+import { S, Engine, predictOptions } from "../state.js";
+import { esName, conf } from "../data/teams.js";
 import { statusOf, localTime, dateLabel, matchTag, sortChrono } from "./format.js";
 import {
   el, flagEl, isReal, refLabel, sect, predictionResult, segBar, probLabels, matchCard, pct
@@ -51,7 +51,7 @@ export function openMatch(m){
 
   // probabilidad en vivo (si hay marcador real en juego)
   if(real && st.kind === "live" && st.real && hasScore){
-    const base = Engine.predictMatch(t1, t2, S.model, { neutral: !!m.neutral });
+    const base = Engine.predictMatch(t1, t2, S.model, predictOptions(m));
     const ip = Engine.inPlayProbability(m.score[0], m.score[1], st.minute, base.lambda1, base.lambda2);
     wrap.appendChild(el("div", { class: "secttitle", style: "margin-top:4px" }, "Probabilidad en vivo"));
     wrap.appendChild(segBar(ip));
@@ -70,7 +70,7 @@ export function openMatch(m){
   // predicción (partido por jugar)
   if(real && !m.played && st.kind !== "live"){
     wrap.appendChild(el("div", { class: "secttitle", style: "margin-top:18px" }, "Predicción"));
-    const p = Engine.predictMatch(t1, t2, S.model, { neutral: !!m.neutral, knockout: m.stage === "ko" });
+    const p = Engine.predictMatch(t1, t2, S.model, predictOptions(m, { knockout: m.stage === "ko" }));
     const panel = el("div", { class: "panel", style: "margin-bottom:0" });
     panel.appendChild(predictionResult(p));
     wrap.appendChild(panel);
@@ -95,14 +95,20 @@ export function openTeam(team){
   if(!isReal(team)) return;
   const lb = S.model.leaderboard(S.T.teamsSet);
   const rank = lb.findIndex(([t]) => t === team) + 1;
-  const row = standingRow(team);
+  const row = standingRow(team);                                   // liga
+  const grp = !row ? Object.keys(S.T.groups || {}).find(g => (S.T.groups[g] || []).includes(team)) : null; // Mundial
+  const sp = S.simProbs && S.simProbs[team];
+  const champPct = sp ? (sp.title != null ? sp.title : sp.champion) : null;  // liga vs Mundial
   const wrap = el("div");
 
   const head = el("div", { class: "sheet-head" });
   head.appendChild(flagEl(team, "flag"));
+  let metaTxt = S.T.name;
+  if(row) metaTxt += " · " + row.pj + " jugados";
+  else if(grp) metaTxt = (conf(team) ? conf(team) + " · " : "") + "Grupo " + grp;
   head.appendChild(el("div", { style: "flex:1" }, [
     el("div", { class: "nm" }, esName(team)),
-    el("div", { class: "meta" }, S.T.name + (row ? " · " + row.pj + " jugados" : ""))
+    el("div", { class: "meta" }, metaTxt)
   ]));
   head.appendChild(closeBtn());
   wrap.appendChild(head);
@@ -111,7 +117,8 @@ export function openTeam(team){
   ig.appendChild(infoPill(String(Math.round(S.model.get(team))), "Elo actual"));
   ig.appendChild(infoPill("#" + rank, "Ranking Elo (" + S.T.teams.length + ")"));
   if(row) ig.appendChild(infoPill(row.pts + " pts", "Posición #" + row.rank));
-  else if(S.simProbs && S.simProbs[team]) ig.appendChild(infoPill(pct(S.simProbs[team].title, 1), "Ser campeón"));
+  else if(champPct != null) ig.appendChild(infoPill(pct(champPct, 1), "Ser campeón"));
+  else if(grp) ig.appendChild(infoPill(grp, "Grupo"));
   wrap.appendChild(ig);
 
   wrap.appendChild(el("div", { class: "secttitle", style: "margin-top:4px" }, "Sus partidos"));

@@ -85,13 +85,15 @@ export class EloModel {
    * opts.homeAdv: ventaja de local a aplicar al equipo de casa (team1Ref).
    */
   applyTournament(matches, teams, opts = {}){
-    const homeAdv = opts.homeAdv || 0;
+    // homeAdvFn(m) -> ventaja Elo del local en ese partido. Por defecto: HOME_ADVANTAGE
+    // al local (team1) salvo cancha neutral. El Mundial pasa su propia función.
+    const fn = opts.homeAdvFn || (m => (m.neutral ? 0 : (opts.homeAdv || 0)));
     let applied = 0;
     const played = matches.filter(m => m.played && m.score)
       .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : a.num - b.num));
     for(const m of played){
       if(teams.has(m.team1Ref) && teams.has(m.team2Ref)){
-        this.applyResult(m.team1Ref, m.team2Ref, m.score[0], m.score[1], m.neutral ? 0 : homeAdv);
+        this.applyResult(m.team1Ref, m.team2Ref, m.score[0], m.score[1], fn(m));
         applied++;
       }
     }

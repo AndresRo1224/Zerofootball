@@ -1,8 +1,8 @@
 /**
  * ui/components.js — Piezas visuales reutilizables.
  */
-import { S, Engine } from "../state.js";
-import { esName, code, logoUrl, teamColor } from "../data/teams.js";
+import { S, Engine, predictOptions } from "../state.js";
+import { esName, code, logoUrl, teamColor, nationalFlag } from "../data/teams.js";
 import { statusOf, localTime, matchTag } from "./format.js";
 import { openMatch, openTeam } from "./sheets.js";
 
@@ -27,7 +27,7 @@ export const isReal = ref => !!(S.T && S.T.teamsSet.has(ref));
 
 /* ---------- escudos de equipo (logo de API; fallback a monograma) ---------- */
 export function flagEl(team, cls = "flag"){
-  const url = logoUrl(team);
+  const url = logoUrl(team) || nationalFlag(team);
   if(url){
     const img = el("img", { class: cls, src: url, alt: esName(team), loading: "lazy" });
     img.onerror = () => { img.replaceWith(monogramEl(team, cls)); };
@@ -159,7 +159,7 @@ export function matchCard(m){
 
   // probabilidad
   if(real){
-    const base = Engine.predictMatch(t1, t2, S.model, { neutral: !!m.neutral });
+    const base = Engine.predictMatch(t1, t2, S.model, predictOptions(m));
     if(isLive && st.real && hasScore){
       const ip = Engine.inPlayProbability(m.score[0], m.score[1], st.minute, base.lambda1, base.lambda2);
       card.appendChild(miniProb(t1, t2, ip, true));

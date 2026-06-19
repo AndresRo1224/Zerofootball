@@ -5,12 +5,16 @@ calendario, clasificación, un **predictor** de cualquier cruce y un **pronósti
 de temporada** (título · Champions · descenso) por Monte Carlo. Funciona como
 **web**, como **PWA instalable** y como **app nativa** (Android/iOS con Capacitor).
 
-Datos de **API-Football** servidos a través de un **proxy seguro**: la clave vive
-en el servidor (variable de entorno), **nunca** en el navegador ni en el repositorio.
+Incluye **dos modos** (elegibles en el selector de competición):
+- **Mundial 2026** — la app original: 12 grupos, cuadro de eliminatorias y simulación
+  de campeón. Usa datos de **openfootball** (gratis, público); **no** consume tu API.
+- **Grandes ligas** — Premier, LaLiga, Serie A, Bundesliga, Ligue 1, Champions, Europa
+  League, Eredivisie, Primeira, Brasileirão, Libertadores. Usan **API-Football** vía un
+  **proxy seguro**: la clave vive en el servidor (variable de entorno), **nunca** en el
+  navegador ni en el repositorio.
 
-Ligas incluidas (ampliables en `src/config.js`): Premier League, LaLiga, Serie A,
-Bundesliga, Ligue 1, Champions, Europa League, Eredivisie, Primeira Liga,
-Brasileirão y Libertadores.
+Ampliar/quitar competiciones = editar `src/config.js` (cada una con su `type`:
+`worldcup`, `league` o `cup`).
 
 ---
 
@@ -116,12 +120,15 @@ de inicio”.
     │   ├── league.js          #   parseLeague + Monte Carlo de temporada
     │   └── tournament.js      #   utilidades (computeStandings, RNG)
     ├── data/
-    │   ├── teams.js           #   registro dinámico de clubes (escudo/nombre)
-    │   ├── snapshot.js        #   respaldo offline (generado)
+    │   ├── teams.js           #   selecciones (banderas/ES) + registro de clubes
+    │   ├── snapshot.js        #   respaldo offline de liga (generado)
+    │   ├── wcSnapshot.js      #   respaldo offline del Mundial (openfootball)
     │   └── providers/
-    │       ├── apiSports.js   #   cliente + normalización de la API
-    │       └── provider.js    #   carga de una liga (con fallback)
-    └── ui/  (format · components · sheets · sim · views/)
+    │       ├── apiSports.js   #   cliente + normalización de la API (ligas)
+    │       ├── openfootball.js#   fuente del Mundial 2026
+    │       └── provider.js    #   carga por tipo de competición (con fallback)
+    └── ui/  (format · components · sheets · sim ·
+             views/: hoy · partidos · tabla · grupos · prediccion · pronostico · bracket)
 ```
 
 ---

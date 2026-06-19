@@ -1,55 +1,79 @@
 /**
- * state.js — Estado compartido de la app.
- * `S` guarda la competición actual, el modelo Elo y la caché de simulación.
- * `S.go`/`S.refresh` los asigna el router para re-renderizar desde cualquier módulo.
+ * state.js — Estado compartido. Soporta DOS modos de competición:
+ *  - "worldcup": Mundial (openfootball + motor de torneo: grupos/bracket/MC).
+ *  - "league"/"cup": grandes ligas (API-Football + tabla/pronóstico de temporada).
  */
 import * as Engine from "./engine/index.js";
 import { CONFIG } from "./config.js";
 
 export const S = {
-  T: null,                 // competición parseada (parseLeague)
-  model: null,             // EloModel (sembrado + refinado)
-  simProbs: null,          // probabilidades de temporada (Monte Carlo, bajo demanda)
+  T: null,                 // competición parseada
+  model: null,             // EloModel
+  simProbs: null,          // probabilidades (MC) — forma según el modo
+  likely: null,            // camino más probable (bracket del Mundial)
 
   currentTab: "hoy",
   currentLeague: CONFIG.DEFAULT_LEAGUE,
   leagues: CONFIG.LEAGUES,
+  leagueType: "league",    // tipo de la competición activa
 
   partidosFilter: "prox",
   partidosRound: "",
   sourceLabel: "",
-  isLive: false,           // true si hay algún partido en vivo real
+  isLive: false,
 
-  // estado del predictor de cruces
   predictor: { a: null, b: null, neutral: true, ko: false, result: null },
 
-  // asignados por el router
   go: () => {},
   refresh: () => {}
 };
 
-/** (Re)construye competición + modelo Elo a partir de los datos parseados. */
-export function setLeagueData(parsed, { isLive = false, label = "" } = {}){
-  S.T = parsed;
-  const base = Engine.seedFromStandings(parsed.standings);
-  S.model = new Engine.EloModel(base, Engine.K_CLUB);
-  S.model.applyTournament(parsed.matches, parsed.teamsSet, { homeAdv: Engine.HOME_ADVANTAGE });
+/** (Re)construye competición + modelo Elo según el tipo. */
+export function setCompetitionData(T, { type = "league", isLive = false, label = "" } = {}){
+  S.T = T;
+  S.leagueType = type;
+
+  if(type === "worldcup"){
+    // Selecciones: Elo base nacional + refinado con ventaja de local de anfitriones.
+    S.model = new Engine.EloModel(Engine.BASE_ELO, Engine.K_WC);
+    S.model.applyTournament(T.matches, T.teamsSet, {
+      homeAdvFn: m => Engine.homeBonus(m.team1Ref, m.ground) - Engine.homeBonus(m.team2Ref, m.ground)
+    });
+  } else {
+    // Clubes: Elo sembrado con la tabla + ventaja de local del equipo de casa.
+    const base = Engine.seedFromStandings(T.standings);
+    S.model = new Engine.EloModel(base, Engine.K_CLUB);
+    S.model.applyTournament(T.matches, T.teamsSet, { homeAdv: Engine.HOME_ADVANTAGE });
+  }
+
   S.simProbs = null;
+  S.likely = null;
   S.isLive = isLive;
   S.sourceLabel = label;
 
-  // predictor por defecto: los dos mejores del ranking Elo
-  if(!S.predictor.a || !parsed.teamsSet.has(S.predictor.a) || !parsed.teamsSet.has(S.predictor.b)){
-    const lb = S.model.leaderboard(parsed.teamsSet);
-    S.predictor.a = lb[0] ? lb[0][0] : parsed.teams[0] || null;
-    S.predictor.b = lb[1] ? lb[1][0] : parsed.teams[1] || null;
+  if(!S.predictor.a || !T.teamsSet.has(S.predictor.a) || !T.teamsSet.has(S.predictor.b)){
+    const lb = S.model.leaderboard(T.teamsSet);
+    S.predictor.a = lb[0] ? lb[0][0] : T.teams[0] || null;
+    S.predictor.b = lb[1] ? lb[1][0] : T.teams[1] || null;
     S.predictor.result = null;
   }
 }
 
-/** Liga seleccionada (objeto de CONFIG.LEAGUES). */
+/** Liga/competición seleccionada (objeto de CONFIG.LEAGUES). */
 export function currentLeagueMeta(){
   return S.leagues.find(l => l.id === S.currentLeague) || S.leagues[0];
+}
+
+/**
+ * Opciones de predicción para un partido según el modo:
+ *  - Mundial: ventaja de local solo de anfitriones (vía ground).
+ *  - Liga/copa: el local (team1) tiene ventaja salvo cancha neutral.
+ */
+export function predictOptions(m, extra = {}){
+  const base = S.leagueType === "worldcup"
+    ? { ground: m.ground }
+    : { neutral: !!m.neutral };
+  return Object.assign(base, extra);
 }
 
 export { Engine };

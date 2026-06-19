@@ -1,16 +1,23 @@
 /**
  * router.js — Navegación entre pestañas + rutas con hash (#/tabla, etc.).
  */
-import { S } from "./state.js";
+import { S, currentLeagueMeta } from "./state.js";
 import { renderHoy } from "./ui/views/hoy.js";
 import { renderPartidos } from "./ui/views/partidos.js";
 import { renderTabla } from "./ui/views/tabla.js";
+import { renderGrupos } from "./ui/views/grupos.js";
 import { renderPrediccion } from "./ui/views/prediccion.js";
 import { renderPronostico } from "./ui/views/pronostico.js";
+import { renderBracket } from "./ui/views/bracket.js";
+
+const isWC = () => currentLeagueMeta().type === "worldcup";
 
 const VIEWS = {
-  hoy: renderHoy, partidos: renderPartidos, tabla: renderTabla,
-  prediccion: renderPrediccion, pronostico: renderPronostico
+  hoy: renderHoy,
+  partidos: renderPartidos,
+  tabla: () => isWC() ? renderGrupos() : renderTabla(),       // Mundial: Grupos
+  prediccion: renderPrediccion,
+  pronostico: () => isWC() ? renderBracket() : renderPronostico() // Mundial: Bracket
 };
 const TABS = Object.keys(VIEWS);
 

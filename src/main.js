@@ -1,69 +1,65 @@
 /**
- * main.js — Arranque de la app de fútbol.
- *  1) Render inmediato con la instantánea local (si hay).
- *  2) Carga de la liga seleccionada vía proxy (API-Football).
- *  3) Selector de liga + auto-refresco + "tick" del minuto en vivo.
+ * main.js — Arranque. Soporta Mundial (openfootball) y ligas (API-Football).
  */
 import { CONFIG } from "./config.js";
-import { S, setLeagueData, currentLeagueMeta, Engine } from "./state.js";
+import { S, setCompetitionData, currentLeagueMeta, Engine } from "./state.js";
 import { initRouter } from "./router.js";
-import { loadLeague } from "./data/providers/provider.js";
+import { loadCompetition } from "./data/providers/provider.js";
 import { normalizeFixtures, normalizeStandings } from "./data/providers/apiSports.js";
 import snapshot from "./data/snapshot.js";
+import wcSnapshot from "./data/wcSnapshot.js";
 import { openElo, openAbout } from "./ui/sheets.js";
 import { flashToast, el } from "./ui/components.js";
 import { statusOf } from "./ui/format.js";
 
-/* ---------- etiqueta de estado de datos ---------- */
+/* ---------- etiquetas ---------- */
 function setUpdated(text, live){
   const lab = document.getElementById("updatedLabel");
   lab.innerHTML = "";
   lab.appendChild(el("span", { class: "dotpulse", style: live ? "" : "background:var(--faint)" }));
   lab.appendChild(el("span", {}, text));
 }
-function setBrandSub(text){
-  const sub = document.getElementById("brandSub");
-  if(sub) sub.textContent = text;
+function setBrandSub(text){ const s = document.getElementById("brandSub"); if(s) s.textContent = text; }
+
+/** Etiquetas de las pestañas según el modo (Mundial vs liga). */
+function updateNavLabels(){
+  const wc = currentLeagueMeta().type === "worldcup";
+  const set = (tab, txt) => { const b = document.querySelector('#nav button[data-tab="' + tab + '"] .lb'); if(b) b.textContent = txt; };
+  set("tabla", wc ? "Grupos" : "Tabla");
+  set("pronostico", wc ? "Bracket" : "Pronóstico");
 }
 
-/* ---------- re-render conservando el scroll ---------- */
-function refreshKeepScroll(){
-  const y = window.scrollY;
-  S.refresh();
-  window.scrollTo(0, y);
-}
+function refreshKeepScroll(){ const y = window.scrollY; S.refresh(); window.scrollTo(0, y); }
 function sheetOpen(){ return document.getElementById("sheet").classList.contains("show"); }
 
-/* ---------- parseo de una respuesta de loadLeague a S.T ---------- */
-function applyLoad({ league, season, matches, standings, isLive, label }){
-  const T = Engine.parseLeague(matches, standings, {
-    name: league.name, type: league.type, leagueId: league.id, season
-  });
-  setLeagueData(T, { isLive, label });
+/* ---------- construir S.T desde una respuesta del proveedor ---------- */
+function applyLoad(res){
+  if(res.type === "worldcup"){
+    const T = Engine.parseTournament(res.raw);
+    setCompetitionData(T, { type: "worldcup", isLive: res.isLive, label: res.label });
+  } else {
+    const { league, season, matches, standings, isLive, label } = res;
+    const T = Engine.parseLeague(matches, standings,
+      { name: league.name, type: league.type, leagueId: league.id, season });
+    setCompetitionData(T, { type: league.type, isLive, label });
+  }
 }
 
-/* ---------- carga de datos ---------- */
+/* ---------- carga ---------- */
 let loadToken = 0;
 async function reload(manual){
   const myToken = ++loadToken;
   if(manual) flashToast("Actualizando…");
   setUpdated("Cargando " + currentLeagueMeta().name + "…", false);
 
-  const res = await loadLeague(S.currentLeague);
-  if(myToken !== loadToken) return;          // llegó otra carga más nueva
-
-  if(!res.matches.length && res.error){
-    applyLoad(res);                          // T vacío, pero no rompe
-    setUpdated(res.label, false);
-    refreshKeepScroll();
-    if(manual) flashToast("Sin datos: revisa conexión/plan de la API");
-    return;
-  }
+  const res = await loadCompetition(currentLeagueMeta());
+  if(myToken !== loadToken) return;
 
   applyLoad(res);
   const played = S.T.matches.filter(m => m.played).length;
   if(res.isLive) setUpdated("En vivo · " + res.label, true);
   else setUpdated(res.label + " · " + played + " partidos", false);
+  updateNavLabels();
   refreshKeepScroll();
   if(manual) flashToast(res.error ? "Sin conexión: datos locales" : "✓ Actualizado");
 }
@@ -80,32 +76,37 @@ function buildLeagueSelect(){
   });
   sel.addEventListener("change", () => {
     S.currentLeague = Number(sel.value);
-    S.simProbs = null;
+    S.simProbs = null; S.likely = null; S.partidosRound = "";
     setBrandSub(currentLeagueMeta().name);
     reload(true);
   });
 }
 
-/* ---------- arranque ---------- */
-function boot(){
-  // 1) primer pintado: instantánea local o estructura vacía (S.T nunca es null)
-  const meta = currentLeagueMeta();
-  let firstT = null;
-  try {
-    if(snapshot && snapshot.leagueId === S.currentLeague && snapshot.fixtures?.response?.length){
+/* ---------- primer pintado (sin red) ---------- */
+function firstPaint(meta){
+  try{
+    if(meta.type === "worldcup") return Engine.parseTournament(wcSnapshot);
+    if(snapshot && snapshot.leagueId === meta.id && snapshot.fixtures?.response?.length){
       const matches = normalizeFixtures(snapshot.fixtures, meta.type);
       const standings = snapshot.standings ? normalizeStandings(snapshot.standings) : null;
-      firstT = Engine.parseLeague(matches, standings,
+      return Engine.parseLeague(matches, standings,
         { name: meta.name, type: meta.type, leagueId: meta.id, season: snapshot.season });
     }
-  } catch { /* instantánea inválida: seguimos con estructura vacía */ }
-  if(!firstT) firstT = Engine.parseLeague([], null,
-    { name: meta.name, type: meta.type, leagueId: meta.id, season: CONFIG.SEASON });
-  setLeagueData(firstT, { isLive: false, label: meta.name + " · cargando" });
+  }catch{ /* instantánea inválida */ }
+  return meta.type === "worldcup"
+    ? Engine.parseTournament(wcSnapshot)
+    : Engine.parseLeague([], null, { name: meta.name, type: meta.type, leagueId: meta.id, season: CONFIG.SEASON });
+}
+
+/* ---------- arranque ---------- */
+function boot(){
+  const meta = currentLeagueMeta();
+  setCompetitionData(firstPaint(meta), { type: meta.type, isLive: false, label: meta.name + " · cargando" });
 
   setBrandSub(meta.name);
   buildLeagueSelect();
   initRouter();
+  updateNavLabels();
 
   document.getElementById("btnElo").addEventListener("click", openElo);
   document.getElementById("btnInfo").addEventListener("click", openAbout);
@@ -114,24 +115,16 @@ function boot(){
   document.getElementById("sheetBg").addEventListener("click", () =>
     import("./ui/sheets.js").then(s => s.closeSheet()));
 
-  // 2) datos reales
   reload(false);
 
-  // 3) auto-refresco periódico
   setInterval(() => { if(!sheetOpen()) reload(false); }, CONFIG.POLL_INTERVAL_MS);
-
-  // 3b) tick para refrescar el minuto/probabilidad de partidos en vivo
   setInterval(() => {
     if(sheetOpen() || !S.T) return;
-    const hayVivo = S.T.matches.some(m => statusOf(m).kind === "live");
-    if(hayVivo) refreshKeepScroll();
+    if(S.T.matches.some(m => statusOf(m).kind === "live")) refreshKeepScroll();
   }, CONFIG.LIVE_TICK_MS);
 
-  // PWA
   if("serviceWorker" in navigator){
-    window.addEventListener("load", () => {
-      navigator.serviceWorker.register("./service-worker.js").catch(() => {});
-    });
+    window.addEventListener("load", () => navigator.serviceWorker.register("./service-worker.js").catch(() => {}));
   }
 }
 
