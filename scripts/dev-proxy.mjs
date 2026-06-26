@@ -7,6 +7,7 @@
  * desplegar.  ->  npm run dev   (http://localhost:5173)
  */
 import http from "node:http";
+import { spawn } from "node:child_process";
 import { readFile } from "node:fs/promises";
 import { existsSync, readFileSync } from "node:fs";
 import { extname, join, normalize } from "node:path";
@@ -84,6 +85,26 @@ const server = http.createServer(async (req, res) => {
       res.writeHead(502, { "content-type": "application/json" });
       return res.end(JSON.stringify({ error: "Error del proxy: " + e.message }));
     }
+  }
+
+  // --- predictor Python (Dixon-Coles) ---
+  if (url.pathname === "/api/predict" && req.method === "POST") {
+    const chunks = [];
+    req.on("data", c => chunks.push(c));
+    req.on("end", () => {
+      const body = Buffer.concat(chunks).toString("utf8");
+      const py = spawn(process.platform === "win32" ? "python" : "python3", [join(ROOT, "api", "predict.py")]);
+      let out = "", err = "";
+      py.stdout.on("data", d => out += d);
+      py.stderr.on("data", d => err += d);
+      py.on("error", () => { res.writeHead(502, { "content-type": "application/json" }); res.end(JSON.stringify({ error: "python no disponible" })); });
+      py.on("close", () => {
+        res.writeHead(200, { "content-type": "application/json; charset=utf-8" });
+        res.end(out || JSON.stringify({ error: err || "sin salida" }));
+      });
+      py.stdin.write(body); py.stdin.end();
+    });
+    return;
   }
 
   // --- noticias ---

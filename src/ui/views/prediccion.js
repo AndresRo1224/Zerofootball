@@ -9,8 +9,26 @@ import { esName } from "../../data/teams.js";
 import { el, flagEl, predictionResult, pct } from "../components.js";
 import { openTeam } from "../sheets.js";
 import { runMonteCarlo } from "../sim.js";
+import { predictMatchApi } from "../../data/providers/predict.js";
 
 const P = S.predictor;
+
+async function calcular(){
+  if(!P.a || !P.b || P.a === P.b) return;
+  P.loading = true; S.refresh();
+  // El Mundial tiene pocos partidos por equipo: el Elo (con priors) va mejor.
+  // En ligas usamos el modelo robusto Dixon-Coles (Python) con respaldo a Elo.
+  try{
+    if(currentLeagueMeta().type !== "league") throw new Error("usar elo");
+    const results = S.T.matches.filter(m => m.played && m.score)
+      .map(m => [m.team1Ref, m.team2Ref, m.score[0], m.score[1]]);
+    P.result = await predictMatchApi({ results, home: P.a, away: P.b, neutral: P.neutral, knockout: P.ko });
+  }catch{
+    P.result = Engine.predictMatch(P.a, P.b, S.model, { neutral: P.neutral, knockout: P.ko });
+    P.result.model = "elo";
+  }
+  P.loading = false; S.refresh();
+}
 
 export function renderPrediccion(){
   const v = el("div");
@@ -35,15 +53,16 @@ export function renderPrediccion(){
   panel.appendChild(tg);
 
   panel.appendChild(el("button", {
-    class: "btn",
-    onclick: () => {
-      if(!P.a || !P.b || P.a === P.b) return;
-      P.result = Engine.predictMatch(P.a, P.b, S.model, { neutral: P.neutral, knockout: P.ko });
-      S.refresh();
-    }
-  }, "Calcular predicción"));
+    class: "btn", disabled: P.loading ? "" : null, onclick: () => calcular()
+  }, P.loading ? [el("span", { class: "spinner" }), "Calculando…"] : "Calcular predicción"));
 
-  if(P.result) panel.appendChild(predictionResult(P.result));
+  if(P.result){
+    panel.appendChild(predictionResult(P.result));
+    panel.appendChild(el("div", { class: "modelbadge" },
+      P.result.model === "dixon-coles"
+        ? "⚙ Modelo Dixon-Coles · ataque/defensa por máxima verosimilitud"
+        : "⚙ Modelo Elo · cálculo local"));
+  }
   v.appendChild(panel);
 
   /* ---- Panel según el modo ---- */

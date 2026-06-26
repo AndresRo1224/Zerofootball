@@ -136,6 +136,17 @@ de inicio”.
 
 ## 🧠 El modelo
 
+**Ligas — predictor robusto en Python (Dixon-Coles).** `api/predict.py` ajusta por
+**máxima verosimilitud** la fuerza de ataque y defensa de cada equipo + ventaja de
+local (regresión de Poisson ponderada por recencia) y estima la corrección de
+marcadores bajos. Predice 1X2, goles esperados, marcadores, +2.5, ambos marcan,
+avance en eliminatoria y el **pronóstico de temporada** (Monte Carlo vectorizado:
+título / Champions / descenso). El cliente envía los resultados ya jugados (no gasta
+cuota). Requiere `numpy` (ver `requirements.txt`); en local lo sirve el dev-proxy
+ejecutando Python. Si la función no está disponible, el cliente cae al **motor JS**.
+
+**Mundial y respaldo — motor JS (Elo + Poisson + Dixon-Coles).**
+
 1. **Elo** — cada equipo parte de una fuerza **sembrada con la tabla actual** y se
    **refina con los resultados** (golear y ganar a rivales fuertes sube más).
 2. **Goles esperados** — la diferencia de Elo (+ ventaja de local) da λ₁, λ₂.

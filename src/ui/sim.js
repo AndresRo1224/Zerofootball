@@ -6,20 +6,26 @@
  */
 import { S, Engine, currentLeagueMeta } from "../state.js";
 import { toast, hideToast } from "./components.js";
+import { simulateSeasonApi } from "../data/providers/predict.js";
 
-/* ---------- LIGA ---------- */
-export function runSeasonSim(n, done){
+/* ---------- LIGA: modelo robusto (Python/Dixon-Coles) con respaldo JS ---------- */
+export async function runSeasonSim(n, done){
   const meta = currentLeagueMeta();
-  const remaining = S.T.matches.filter(m =>
-    !m.played && S.T.teamsSet.has(m.team1Ref) && S.T.teamsSet.has(m.team2Ref)).length;
-  const runs = remaining === 0 ? 1 : n;
+  const results = S.T.matches.filter(m => m.played && m.score)
+    .map(m => [m.team1Ref, m.team2Ref, m.score[0], m.score[1]]);
+  const fixtures = S.T.matches.filter(m => !m.played && S.T.teamsSet.has(m.team1Ref) && S.T.teamsSet.has(m.team2Ref))
+    .map(m => [m.team1Ref, m.team2Ref]);
 
-  toast(remaining === 0 ? "Calculando…" : "Simulando " + runs.toLocaleString() + " temporadas…");
-  setTimeout(() => {
-    S.simProbs = Engine.simulateSeason(S.T, S.model, runs, { clSpots: meta.cl, relegSpots: meta.releg });
-    hideToast();
-    if(done) done();
-  }, 30);
+  toast(fixtures.length ? "Simulando temporada (Dixon-Coles)…" : "Calculando…");
+  try{
+    S.simProbs = await simulateSeasonApi({
+      results, fixtures, teams: S.T.teams, clSpots: meta.cl, relegSpots: meta.releg, sims: n
+    });
+  }catch{
+    S.simProbs = Engine.simulateSeason(S.T, S.model, fixtures.length ? n : 1, { clSpots: meta.cl, relegSpots: meta.releg });
+  }
+  hideToast();
+  if(done) done();
 }
 
 /* ---------- MUNDIAL ---------- */

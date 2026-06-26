@@ -419,4 +419,29 @@ table.gt.odds td.pts{color:var(--gold)}
 .nav button{transition:color .18s,background .18s}
 .nav button.on .lb{animation:rise .25s ease}
 
+/* ---------- Pulido visual (estilo broadcast / ESPN) ---------- */
+.modelbadge{margin-top:11px;text-align:center;font-size:10.5px;color:var(--faint);font-weight:600;letter-spacing:.2px}
+.btn:disabled{opacity:.78}
+.btn .spinner{border-color:rgba(6,20,13,.3);border-top-color:#06140d;margin-right:8px;width:15px;height:15px}
+
+.mcard{background:linear-gradient(180deg,var(--card),#0f1d29)}
+.secttitle{padding-left:12px;position:relative}
+.secttitle::before{content:"";position:absolute;left:2px;top:3px;bottom:3px;width:3px;border-radius:3px;background:var(--grad)}
+
+.probbar{height:34px;border-radius:11px;box-shadow:inset 0 1px 0 rgba(255,255,255,.07)}
+.probbar > div{font-size:14px}
+.pill{background:linear-gradient(180deg,var(--card),#0e1b27)}
+.chip.on{box-shadow:0 4px 14px rgba(47,210,122,.3)}
+
+.nav button.on{position:relative}
+.nav button.on::before{content:"";position:absolute;top:-7px;left:50%;transform:translateX(-50%);
+  width:22px;height:3px;border-radius:3px;background:var(--grad)}
+
+@media (min-width:900px) and (hover:hover){
+  .mcard:hover,.newscard:hover,.gcard:hover{transform:translateY(-2px);border-color:var(--line2);box-shadow:0 12px 26px -18px rgba(0,0,0,.7)}
+  .scut:hover{border-color:var(--grass)}
+  .scut:hover .lb{color:var(--ink)}
+  .oddrow:hover{background:rgba(255,255,255,.025)}
+}
+
 @media (prefers-reduced-motion: reduce){*{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
