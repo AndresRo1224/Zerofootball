@@ -88,9 +88,13 @@ export function openMatch(m){
     wrap.appendChild(sc);
   }
 
-  // predicción (partido por jugar): Elo al instante, luego modelo robusto
-  if(real && !m.played && st.kind !== "live"){
-    wrap.appendChild(el("div", { class: "secttitle", style: "margin-top:18px" }, "Predicción"));
+  // predicción del partido: Elo al instante, luego modelo robusto.
+  // Se muestra también EN VIVO (junto a la probabilidad en juego de arriba),
+  // solo se oculta cuando el partido ya terminó.
+  if(real && !m.played){
+    const live = st.kind === "live";
+    wrap.appendChild(el("div", { class: "secttitle", style: "margin-top:18px" },
+      live ? "Predicción (previa al partido)" : "Predicción"));
     const panel = el("div", { class: "panel", style: "margin-bottom:0" });
     const p = Engine.predictMatch(t1, t2, S.model, predictOptions(m, { knockout: m.stage === "ko" }));
     panel.appendChild(predictionResult(p));
