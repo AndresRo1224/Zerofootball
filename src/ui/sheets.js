@@ -1,12 +1,34 @@
 /**
  * ui/sheets.js — Paneles deslizantes (modales) de la app.
  */
-import { S, Engine, predictOptions } from "../state.js";
+import { S, Engine, predictOptions, currentLeagueMeta } from "../state.js";
 import { esName, conf } from "../data/teams.js";
 import { statusOf, localTime, dateLabel, matchTag, sortChrono } from "./format.js";
 import {
   el, flagEl, isReal, refLabel, sect, predictionResult, segBar, probLabels, matchCard, pct
 } from "./components.js";
+import { predictMatchApi } from "../data/providers/predict.js";
+
+/** Mejora la predicción del partido con el modelo robusto (Python), si responde. */
+async function upgradeMatchPrediction(panel, badge, m, t1, t2){
+  try{
+    const isWC = currentLeagueMeta().type === "worldcup";
+    const results = S.T.matches.filter(x => x.played && x.score)
+      .map(x => [x.team1Ref, x.team2Ref, x.score[0], x.score[1]]);
+    const payload = { results, home: t1, away: t2, neutral: isWC ? true : !!m.neutral, knockout: m.stage === "ko" };
+    if(isWC){
+      const pr = {};
+      for(const t of S.T.teams) pr[t] = (Engine.BASE_ELO[t] != null ? Engine.BASE_ELO[t] : 1500);
+      payload.priors = pr; payload.priorWeight = 4.0;
+    }
+    const res = await predictMatchApi(payload);
+    panel.innerHTML = "";
+    panel.appendChild(predictionResult(res));
+    panel.appendChild(el("div", { class: "modelbadge" }, "⚙ Modelo Dixon-Coles · ataque/defensa por máxima verosimilitud"));
+  }catch{
+    if(badge) badge.textContent = "⚙ Modelo Elo · cálculo local";
+  }
+}
 
 const refName = ref => isReal(ref) ? esName(ref) : refLabel(ref);
 const closeIcon = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg>';
@@ -67,13 +89,16 @@ export function openMatch(m){
     wrap.appendChild(sc);
   }
 
-  // predicción (partido por jugar)
+  // predicción (partido por jugar): Elo al instante, luego modelo robusto
   if(real && !m.played && st.kind !== "live"){
     wrap.appendChild(el("div", { class: "secttitle", style: "margin-top:18px" }, "Predicción"));
-    const p = Engine.predictMatch(t1, t2, S.model, predictOptions(m, { knockout: m.stage === "ko" }));
     const panel = el("div", { class: "panel", style: "margin-bottom:0" });
+    const p = Engine.predictMatch(t1, t2, S.model, predictOptions(m, { knockout: m.stage === "ko" }));
     panel.appendChild(predictionResult(p));
+    const badge = el("div", { class: "modelbadge" }, [el("span", { class: "spinner" }), "Calculando modelo robusto…"]);
+    panel.appendChild(badge);
     wrap.appendChild(panel);
+    upgradeMatchPrediction(panel, badge, m, t1, t2);
   }
   openSheet(wrap);
 }

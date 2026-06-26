@@ -1,6 +1,6 @@
 /* service-worker.js — PWA: precarga el shell y sirve offline.
    Los datos de /api/ NO se cachean de forma agresiva (network-first). */
-const CACHE = "zerofootball-v6";
+const CACHE = "zerofootball-v7";
 
 const SHELL = [
   "./", "./index.html", "./manifest.webmanifest",
