@@ -182,7 +182,7 @@ function teamRow(team, score, isWinner, lose){
 
 /* ---------- heatmap de marcadores ---------- */
 export function scoreHeatmap(p){
-  const m = Engine.scoreMatrix(p.lambda1, p.lambda2);
+  const m = p.matrix || Engine.scoreMatrix(p.lambda1, p.lambda2);
   const N = 6; let max = 0, best = [0, 0];
   for(let i = 0; i < N; i++) for(let j = 0; j < N; j++) if(m[i][j] > max){ max = m[i][j]; best = [i, j]; }
   const wrap = el("div", { class: "heat-wrap" });
@@ -209,9 +209,61 @@ export function scoreHeatmap(p){
   return wrap;
 }
 
+/* ---------- insignia de modelo ---------- */
+export function modelChip(p){
+  const dc = p.model === "dixon-coles";
+  return el("div", { class: "mchip " + (dc ? "dc" : "elo") }, [
+    el("span", { class: "ic" }, dc ? "✦" : "•"),
+    el("span", {}, dc ? "Modelo Dixon-Coles · robusto" : "Modelo Elo · rápido"),
+    el("span", { class: "tag" }, dc ? "MLE ataque/defensa + priors" : "respaldo local")
+  ]);
+}
+
+/* ---------- fuerza ataque/defensa (índice 100 = media) ---------- */
+function strengthBlock(p){
+  const s = p.strength;
+  const wrap = el("div", { class: "strengthb" });
+  wrap.appendChild(strengthSide(p.team1, s.att1, s.def1));
+  wrap.appendChild(strengthSide(p.team2, s.att2, s.def2));
+  return wrap;
+}
+function strengthSide(team, att, def){
+  const side = el("div", { class: "ss" });
+  side.appendChild(el("div", { class: "nm" }, code(team)));
+  side.appendChild(idxBar("ATA", att, "var(--grass)"));
+  side.appendChild(idxBar("DEF", def, "var(--sky)"));
+  return side;
+}
+function idxBar(label, val, color){
+  const row = el("div", { class: "idxrow" });
+  row.appendChild(el("span", { class: "k" }, label));
+  const track = el("div", { class: "track" });
+  track.appendChild(el("div", { class: "fillb", style: `width:${Math.max(6, Math.min(100, val / 2))}%;background:${color}` }));
+  row.appendChild(track);
+  row.appendChild(el("span", { class: "v", style: val >= 100 ? "color:var(--ink)" : "color:var(--faint)" }, String(val)));
+  return row;
+}
+
+/* ---------- más mercados (solo modelo completo) ---------- */
+function marketsBlock(p){
+  const mk = p.markets;
+  const grid = el("div", { class: "markets" });
+  const add = (label, v) => grid.appendChild(el("div", { class: "mkt" }, [
+    el("div", { class: "v" }, pct(v, 0)), el("div", { class: "k" }, label)
+  ]));
+  add("+1.5 goles", mk.over15);
+  add("+3.5 goles", mk.over35);
+  add("Doble 1X", mk.dc1x);
+  add("Doble X2", mk.dcx2);
+  add("Imbatido " + code(p.team1), mk.cs1);
+  add("Imbatido " + code(p.team2), mk.cs2);
+  return grid;
+}
+
 /* ---------- resultado completo del predictor ---------- */
 export function predictionResult(p){
   const r = el("div", { class: "result" });
+  if(p.model) r.appendChild(modelChip(p));
   const head = el("div", { class: "res-head" });
   const t1 = el("div", { class: "t" }, [flagEl(p.team1), el("div", { class: "nm" }, esName(p.team1))]);
   const eg = el("div", { class: "eg" });
@@ -233,7 +285,10 @@ export function predictionResult(p){
   pills.appendChild(pillEl(code(p.pWin1 > p.pWin2 ? p.team1 : p.team2), "Favorito"));
   r.appendChild(pills);
 
+  if(p.strength) r.appendChild(strengthBlock(p));
+
   r.appendChild(scoreHeatmap(p));
+  if(p.markets) r.appendChild(marketsBlock(p));
 
   const sl = el("div", { class: "scorelist" });
   const max = p.topScores[0][1];

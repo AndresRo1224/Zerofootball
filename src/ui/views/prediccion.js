@@ -62,13 +62,7 @@ export function renderPrediccion(){
     class: "btn", disabled: P.loading ? "" : null, onclick: () => calcular()
   }, P.loading ? [el("span", { class: "spinner" }), "Calculando…"] : "Calcular predicción"));
 
-  if(P.result){
-    panel.appendChild(predictionResult(P.result));
-    panel.appendChild(el("div", { class: "modelbadge" },
-      P.result.model === "dixon-coles"
-        ? "⚙ Modelo Dixon-Coles · ataque/defensa por máxima verosimilitud"
-        : "⚙ Modelo Elo · cálculo local"));
-  }
+  if(P.result) panel.appendChild(predictionResult(P.result));
   v.appendChild(panel);
 
   /* ---- Panel según el modo ---- */

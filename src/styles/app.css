@@ -444,4 +444,25 @@ table.gt.odds td.pts{color:var(--gold)}
   .oddrow:hover{background:rgba(255,255,255,.025)}
 }
 
+/* ---------- Predicción: insignia de modelo, fuerza y mercados ---------- */
+.mchip{display:flex;align-items:center;gap:8px;padding:9px 12px;border-radius:11px;font-size:11.5px;font-weight:700;margin-bottom:14px}
+.mchip .ic{font-size:13px}
+.mchip .tag{margin-left:auto;font-weight:600;font-size:9.5px;opacity:.9}
+.mchip.dc{background:linear-gradient(90deg,rgba(47,210,122,.18),rgba(84,168,255,.12));border:1px solid rgba(47,210,122,.5);color:var(--grass)}
+.mchip.elo{background:var(--card2);border:1px solid var(--line2);color:var(--muted)}
+
+.strengthb{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
+.strengthb .ss{background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:10px 11px}
+.strengthb .ss .nm{font-family:var(--disp);font-weight:700;font-size:13px;margin-bottom:7px;text-align:center;letter-spacing:.4px}
+.idxrow{display:flex;align-items:center;gap:7px;margin-top:5px}
+.idxrow .k{font-size:9px;color:var(--faint);width:24px;font-weight:700}
+.idxrow .track{flex:1;height:6px;border-radius:3px;background:rgba(255,255,255,.06);overflow:hidden}
+.idxrow .fillb{height:100%;border-radius:3px;transition:width .5s ease}
+.idxrow .v{font-family:var(--disp);font-weight:700;font-size:12px;width:26px;text-align:right}
+
+.markets{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px}
+.mkt{background:var(--card2);border:1px solid var(--line);border-radius:11px;padding:9px 6px;text-align:center}
+.mkt .v{font-family:var(--disp);font-weight:700;font-size:16px}
+.mkt .k{font-size:9px;color:var(--faint);text-transform:uppercase;letter-spacing:.3px;margin-top:3px}
+
 @media (prefers-reduced-motion: reduce){*{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}

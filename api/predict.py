@@ -215,12 +215,32 @@ def predict_match(body):
     flat = sorted(((M[i, j], i, j) for i in range(6) for j in range(6)), reverse=True)
     top = [[[i, j], float(p)] for (p, i, j) in flat[:7]]
 
+    # mercados extra + índices de fuerza (modelo completo)
+    ii = np.arange(MAXG + 1)[:, None]; jj = np.arange(MAXG + 1)[None, :]; tot = ii + jj
+    iA, iB = model["idx"][A], model["idx"][B]
+    att_m = float(model["att"].mean()); def_m = float(model["dcoef"].mean())
+    mi, mj = np.unravel_index(int(np.argmax(M)), M.shape)
+    markets = {
+        "over15": float(M[tot > 1].sum()), "over25": over, "over35": float(M[tot > 3].sum()),
+        "btts": both, "dc1x": p1 + pd, "dc12": p1 + p2, "dcx2": pd + p2,
+        "cs1": float(M[:, 0].sum()), "cs2": float(M[0, :].sum()),
+        "wtn1": float(M[1:, 0].sum()), "wtn2": float(M[0, 1:].sum()),
+    }
+    strength = {
+        "att1": int(round(100 * math.exp(model["att"][iA] - att_m))),
+        "def1": int(round(100 * math.exp(-(model["dcoef"][iA] - def_m)))),
+        "att2": int(round(100 * math.exp(model["att"][iB] - att_m))),
+        "def2": int(round(100 * math.exp(-(model["dcoef"][iB] - def_m)))),
+    }
+
     res = {
         "model": "dixon-coles", "team1": A, "team2": B,
         "lambda1": l1, "lambda2": l2,
         "pWin1": p1, "pDraw": pd, "pWin2": p2,
         "expected1": e1, "expected2": e2,
-        "bothScore": both, "over25": over, "topScores": top, "neutral": neutral
+        "bothScore": both, "over25": over, "topScores": top, "neutral": neutral,
+        "matrix": M[:6, :6].tolist(), "markets": markets, "strength": strength,
+        "mostLikely": [int(mi), int(mj)], "rho": model["rho"]
     }
     if body.get("knockout"):
         a1, a2 = _ko_advance(l1, l2, rho)

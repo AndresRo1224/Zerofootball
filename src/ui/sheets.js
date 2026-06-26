@@ -24,9 +24,8 @@ async function upgradeMatchPrediction(panel, badge, m, t1, t2){
     const res = await predictMatchApi(payload);
     panel.innerHTML = "";
     panel.appendChild(predictionResult(res));
-    panel.appendChild(el("div", { class: "modelbadge" }, "⚙ Modelo Dixon-Coles · ataque/defensa por máxima verosimilitud"));
   }catch{
-    if(badge) badge.textContent = "⚙ Modelo Elo · cálculo local";
+    if(badge) badge.textContent = "⚙ Modelo Elo · cálculo local (sin conexión al modelo robusto)";
   }
 }
 
