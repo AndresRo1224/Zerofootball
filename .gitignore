@@ -9,6 +9,10 @@ node_modules/
 dist/
 *.log
 
+# Python
+__pycache__/
+*.pyc
+
 # Capacitor / móvil: se conservan los proyectos android/ e ios/,
 # pero NO sus artefactos de compilación (regenerables y pesados).
 .gradle/
