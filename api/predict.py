@@ -55,56 +55,83 @@ def _tau(i, j, l1, l2, rho):
 
 
 # ---------------------------------------------------------------- ajuste MLE
-def fit(results, teams):
-    """Regresión de Poisson ponderada (Dixon-Coles) por IRLS. Devuelve params."""
+def fit(results, teams, priors=None, prior_weight=0.0):
+    """
+    Regresión de Poisson ponderada (Dixon-Coles) por IRLS.
+    Si se dan `priors` (Elo por equipo) y prior_weight>0, se regulariza (ridge)
+    el ataque/defensa de cada equipo hacia su fuerza previa. Esto hace ROBUSTO
+    el caso del Mundial (pocos partidos por selección): el prior domina al inicio
+    y los resultados lo van moviendo.
+    """
     idx = {t: i for i, t in enumerate(teams)}
     n = len(teams)
     clean = [r for r in results if len(r) >= 4 and r[0] in idx and r[1] in idx]
     N = len(clean)
-    # ponderación por recencia (media vida ~ media temporada)
-    halflife = max(20.0, N / 2.0)
+    if n < 2:
+        return None
+    halflife = max(20.0, N / 2.0) if N else 20.0
     decay = math.log(2) / halflife
 
-    p = 2 + 2 * (n - 1)              # [intercepto, local, att_1..att_{n-1}, def_1..def_{n-1}]
+    use_prior = bool(priors) and prior_weight and prior_weight > 0
+    if use_prior:
+        p = 2 + 2 * n                 # intercepto, local, att_0..n-1, def_0..n-1 (sin equipo de ref.)
+        att_off, def_off = 2, 2 + n
+    else:
+        p = 2 + 2 * (n - 1)           # equipo 0 = referencia (att=def=0)
+        att_off, def_off = 2, 2 + (n - 1)
+
     rows = []
     for k, (h, a, hg, ag) in enumerate(((r[0], r[1], r[2], r[3]) for r in clean)):
         w = math.exp(-decay * (N - 1 - k))
-        rows.append((float(hg), 1, idx[h], idx[a], w))   # local marca
-        rows.append((float(ag), 0, idx[a], idx[h], w))   # visitante marca
+        rows.append((float(hg), 1, idx[h], idx[a], w))
+        rows.append((float(ag), 0, idx[a], idx[h], w))
     m = len(rows)
-    if m == 0 or n < 2:
-        return None
 
     X = np.zeros((m, p)); y = np.zeros(m); W = np.zeros(m)
     for r, (yi, ishome, sc, co, w) in enumerate(rows):
-        X[r, 0] = 1.0
-        X[r, 1] = ishome
-        if sc > 0:
-            X[r, 1 + sc] = 1.0
-        if co > 0:
-            X[r, 1 + (n - 1) + co] = 1.0
+        X[r, 0] = 1.0; X[r, 1] = ishome
+        if use_prior:
+            X[r, att_off + sc] = 1.0; X[r, def_off + co] = 1.0
+        else:
+            if sc > 0: X[r, 1 + sc] = 1.0
+            if co > 0: X[r, 1 + (n - 1) + co] = 1.0
         y[r] = yi; W[r] = w
 
-    beta = np.zeros(p)
-    for _ in range(60):
+    # objetivo del ridge: 0 salvo att/def, que apuntan a la fuerza Elo previa.
+    mu0 = np.zeros(p); D = np.zeros(p)
+    if use_prior:
+        elos = np.array([float(priors.get(t, 1500)) for t in teams])
+        z = (elos - elos.mean()) / 100.0
+        mu0[att_off:att_off + n] = 0.18 * z      # más Elo -> ataca más
+        mu0[def_off:def_off + n] = -0.18 * z     # más Elo -> concede menos
+        D[att_off:] = 1.0
+        lam = float(prior_weight)
+
+    beta = mu0.copy() if use_prior else np.zeros(p)
+    for _ in range(80):
         mu = np.exp(np.clip(X @ beta, -8, 8))
-        XtWX = X.T @ ((W * mu)[:, None] * X) + 1e-6 * np.eye(p)
-        grad = X.T @ (W * (y - mu))
+        H = X.T @ ((W * mu)[:, None] * X) + 1e-6 * np.eye(p)
+        g = X.T @ (W * (y - mu))
+        if use_prior:
+            H += 2 * lam * np.diag(D)
+            g -= 2 * lam * (D * (beta - mu0))
         try:
-            delta = np.linalg.solve(XtWX, grad)
+            delta = np.linalg.solve(H, g)
         except np.linalg.LinAlgError:
-            delta = np.linalg.lstsq(XtWX, grad, rcond=None)[0]
+            delta = np.linalg.lstsq(H, g, rcond=None)[0]
         beta += delta
         if np.max(np.abs(delta)) < 1e-8:
             break
 
     att = np.zeros(n); dcoef = np.zeros(n)
-    att[1:] = beta[2:2 + (n - 1)]
-    dcoef[1:] = beta[2 + (n - 1):]
+    if use_prior:
+        att = beta[att_off:att_off + n].copy()
+        dcoef = beta[def_off:def_off + n].copy()
+    else:
+        att[1:] = beta[2:2 + (n - 1)]
+        dcoef[1:] = beta[2 + (n - 1):]
     model = {"c": float(beta[0]), "home": float(beta[1]), "att": att, "dcoef": dcoef, "idx": idx}
-
-    # estima rho (corrección de marcadores bajos) por búsqueda 1-D
-    model["rho"] = _fit_rho(clean, model)
+    model["rho"] = _fit_rho(clean, model) if clean else -0.05
     return model
 
 
@@ -169,7 +196,9 @@ def _outcome(M):
 # ---------------------------------------------------------------- modos
 def predict_match(body):
     teams = body.get("teams") or _teams_from(body.get("results", []), [])
-    model = fit(body.get("results", []), teams)
+    if body.get("priors"):
+        teams = sorted(set(teams) | set(body["priors"].keys()))
+    model = fit(body.get("results", []), teams, body.get("priors"), float(body.get("priorWeight", 0) or 0))
     A, B = body["home"], body["away"]
     neutral = bool(body.get("neutral"))
     if model is None or A not in model["idx"] or B not in model["idx"]:

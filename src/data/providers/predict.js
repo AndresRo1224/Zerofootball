@@ -19,9 +19,9 @@ async function post(payload, timeoutMs){
   } finally { clearTimeout(to); }
 }
 
-/** Predicción de un cruce. Devuelve el resultado (mismos campos que el motor JS). */
-export function predictMatchApi({ results, home, away, neutral, knockout }){
-  return post({ mode: "match", results, home, away, neutral: !!neutral, knockout: !!knockout }, 12000);
+/** Predicción de un cruce. priors/priorWeight (opcional) = robustez del Mundial. */
+export function predictMatchApi({ results, home, away, neutral, knockout, priors, priorWeight }){
+  return post({ mode: "match", results, home, away, neutral: !!neutral, knockout: !!knockout, priors, priorWeight }, 12000);
 }
 
 /** Pronóstico de temporada. Devuelve el objeto probs {team:{title,top,releg,...}}. */

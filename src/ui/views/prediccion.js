@@ -16,13 +16,19 @@ const P = S.predictor;
 async function calcular(){
   if(!P.a || !P.b || P.a === P.b) return;
   P.loading = true; S.refresh();
-  // El Mundial tiene pocos partidos por equipo: el Elo (con priors) va mejor.
-  // En ligas usamos el modelo robusto Dixon-Coles (Python) con respaldo a Elo.
+  // Modelo robusto Dixon-Coles (Python). En el Mundial se añaden PRIORS de fuerza
+  // (Elo base por selección) con regularización, porque hay pocos partidos por
+  // equipo. Si la función no responde, respaldo al motor JS (Elo).
   try{
-    if(currentLeagueMeta().type !== "league") throw new Error("usar elo");
     const results = S.T.matches.filter(m => m.played && m.score)
       .map(m => [m.team1Ref, m.team2Ref, m.score[0], m.score[1]]);
-    P.result = await predictMatchApi({ results, home: P.a, away: P.b, neutral: P.neutral, knockout: P.ko });
+    const payload = { results, home: P.a, away: P.b, neutral: P.neutral, knockout: P.ko };
+    if(currentLeagueMeta().type === "worldcup"){
+      const priors = {};
+      for(const t of S.T.teams) priors[t] = (Engine.BASE_ELO[t] != null ? Engine.BASE_ELO[t] : 1500);
+      payload.priors = priors; payload.priorWeight = 4.0;
+    }
+    P.result = await predictMatchApi(payload);
   }catch{
     P.result = Engine.predictMatch(P.a, P.b, S.model, { neutral: P.neutral, knockout: P.ko });
     P.result.model = "elo";

@@ -21,8 +21,8 @@ export const CONFIG = {
   // Re-render del minuto/probabilidad en vivo aunque no lleguen datos nuevos.
   LIVE_TICK_MS: 20_000,
 
-  // Liga mostrada al abrir.
-  DEFAULT_LEAGUE: 39,
+  // Competición mostrada al abrir (1 = Mundial 2026).
+  DEFAULT_LEAGUE: 1,
 
   // --- Marcador EN VIVO del Mundial (opcional) ---
   // El Mundial usa openfootball (resultados, ~a diario). Para marcador y MINUTO
