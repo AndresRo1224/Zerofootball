@@ -145,14 +145,17 @@ def _fit_rho(clean, model):
             la = math.exp(c + att[idx[a]] + dcoef[idx[h]])
             pts.append((hg, ag, lh, la))
     if not pts:
-        return -0.05
-    best, bestll = -0.05, -1e18
-    for rho in np.linspace(-0.2, 0.15, 36):
+        return -0.04
+    # rango SANO (DC típico ~ -0.04) + prior suave hacia -0.04 para que con pocos
+    # datos no se vaya a un extremo que infle artificialmente 0-0 y 1-1.
+    best, bestobj = -0.04, -1e18
+    for rho in np.linspace(-0.09, 0.03, 25):
         ll = 0.0
         for (i, j, lh, la) in pts:
             ll += math.log(max(1e-6, _tau(i, j, lh, la, rho)))
-        if ll > bestll:
-            bestll, best = ll, float(rho)
+        obj = ll - max(25.0, 0.7 * len(pts)) * (rho + 0.04) ** 2
+        if obj > bestobj:
+            bestobj, best = obj, float(rho)
     return best
 
 
